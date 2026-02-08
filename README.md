@@ -143,7 +143,7 @@ dotfiles-coach report [OPTIONS]
 ![Privacy Flow](docs/images/privacy-flow.png)
 
 - All analysis happens **locally** on your machine
-- Secrets are **scrubbed** through 12 regex filters before any data leaves via Copilot (env vars, tokens, passwords, SSH keys, AWS keys, URLs with credentials, base64 blobs, and more)
+- Secrets are **scrubbed** through 13 regex filters before any data leaves via Copilot (env vars, tokens, passwords, SSH keys, AWS keys, npm auth tokens, URLs with credentials, base64 blobs, and more)
 - Secret scrubbing is **mandatory** and cannot be disabled
 - The tool sends data **only** through `gh copilot` CLI commands -- no direct HTTP calls, no telemetry
 - The `apply` command **never** auto-modifies your shell config without explicit `--append-to`
@@ -219,10 +219,10 @@ src/
 
 ## Testing
 
-290 automated tests across 20 test files covering parsers, analyzers, formatters, commands, utilities, and end-to-end workflows.
+291 automated tests across 20 test files covering parsers, analyzers, formatters, commands, utilities, and end-to-end workflows.
 
 ```bash
-npm test              # Run all 290 tests
+npm test              # Run all 291 tests
 npm run test:watch    # Watch mode
 npm run typecheck     # Type-check without emitting
 ```

@@ -69,6 +69,7 @@ export interface SuggestOptions {
   historyFile?: string;
   minFrequency?: number;
   output?: string;
+  interactive?: boolean;
 }
 
 /** Options for apply command. */

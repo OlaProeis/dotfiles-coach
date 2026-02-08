@@ -28,14 +28,14 @@ I realized I was typing `git status`, `git add .`, `git commit -m` as three sepa
 
 ### Privacy-first design
 
-The part I'm most proud of: **mandatory secret scrubbing**. Before any shell history data touches Copilot, it passes through 12 regex-based filters that catch passwords, API tokens, SSH keys, AWS credentials, GitHub/GitLab tokens, Bearer headers, URLs with embedded credentials, Base64 blobs, and more. Every match is replaced with `[REDACTED]`. This layer cannot be disabled -- it's architecturally enforced, not opt-in.
+The part I'm most proud of: **mandatory secret scrubbing**. Before any shell history data touches Copilot, it passes through 13 regex-based filters that catch passwords, API tokens, SSH keys, AWS credentials, GitHub/GitLab/npm tokens, Bearer headers, URLs with embedded credentials, `npm config set` auth commands, Base64 blobs, and more. Every match is replaced with `[REDACTED]`. This layer cannot be disabled -- it's architecturally enforced, not opt-in.
 
 ![Privacy Flow](https://raw.githubusercontent.com/OlaProeis/dotfiles-coach/main/docs/images/privacy-flow.png)
 
 ### The numbers
 
-- **290 automated tests** across 20 test files
-- **12 secret-scrubbing patterns** (all unit tested)
+- **291 automated tests** across 20 test files
+- **13 secret-scrubbing patterns** (all unit tested)
 - **Multi-shell support** -- Bash, Zsh, and PowerShell with auto-detection
 - **3-tier response parser** for Copilot output (JSON fences, raw JSON, regex fallback)
 - **Zero API tokens required** -- piggybacks on your existing `gh auth` session
@@ -104,7 +104,7 @@ The pipeline flows through clearly separated layers: **parsers** (one per shell)
 | Copilot integration | `execa` wrapping `gh copilot suggest` |
 | String similarity | `fast-levenshtein` |
 | File I/O | `fs-extra` |
-| Tests | `vitest` (290 tests) |
+| Tests | `vitest` (291 tests) |
 
 ## My Experience with GitHub Copilot CLI
 
@@ -132,10 +132,10 @@ This approach was born out of necessity: Copilot CLI's output format isn't guara
 Beyond being *in* the tool, Copilot CLI was my constant companion *building* the tool. Some examples:
 
 **Designing the secret scrubber:**
-I used `gh copilot suggest` to brainstorm regex patterns for detecting secrets in shell history. Copilot caught edge cases I hadn't considered -- like AWS access keys always starting with `AKIA`, or GitLab tokens starting with `glpat-`. The final scrubber has 12 battle-tested patterns.
+I used `gh copilot suggest` to brainstorm regex patterns for detecting secrets in shell history. Copilot caught edge cases I hadn't considered -- like AWS access keys always starting with `AKIA`, or GitLab tokens starting with `glpat-`. The final scrubber has 13 battle-tested patterns.
 
 **Shell compatibility:**
-When implementing PowerShell history parsing (which uses a completely different format than Bash/Zsh -- XML-based `ConsoleHost_history.txt`), Copilot CLI helped me understand the format differences and generate the correct parsing logic.
+When implementing PowerShell history parsing (which stores plain-text commands in `ConsoleHost_history.txt` via PSReadLine, a different location and convention than Bash/Zsh `~/.bash_history`), Copilot CLI helped me understand the format differences and platform-specific path resolution logic.
 
 **Safety rules:**
 The dangerous pattern detection module flags commands like `rm -rf /` without `-i`, `chmod 777`, `sudo` with wildcards, and unquoted variable expansion in `rm` commands. Copilot helped me think through edge cases -- like catching `rm -rfi` (which *does* have `-i`) versus `rm -rf` (which doesn't).
@@ -154,7 +154,7 @@ It doesn't just suggest three separate aliases -- it recognizes the *sequence* a
 
 ### The testing story
 
-With 290 tests across 20 files, testability was a core design goal. The `MockCopilotClient` returns canned fixture data, which means:
+With 291 tests across 20 files, testability was a core design goal. The `MockCopilotClient` returns canned fixture data, which means:
 
 - Every test runs without network access
 - CI/CD doesn't need Copilot credentials

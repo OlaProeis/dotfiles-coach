@@ -142,6 +142,14 @@ describe('scrubSecrets', () => {
     );
   });
 
+  it('redacts shorter npm tokens (npm config set format)', () => {
+    const { scrubbed } = scrubSecrets(
+      'npm config set //registry.npmjs.org/:_authToken npm_1234567890abcdef',
+    );
+    expect(scrubbed).toContain(R);
+    expect(scrubbed).not.toContain('npm_1234567890abcdef');
+  });
+
   // ── Bearer / Authorization ────────────────────────────────────────────
 
   it('redacts Bearer tokens', () => {

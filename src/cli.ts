@@ -76,18 +76,21 @@ program
   )
   .option('--min-frequency <n>', 'Minimum frequency threshold', '5')
   .option('--output <file>', 'Save suggestions to file instead of stdout')
+  .option('--interactive', 'Review/approve each suggestion one by one')
   .action(
     async (opts: {
       shell: string;
       historyFile?: string;
       minFrequency: string;
       output?: string;
+      interactive?: boolean;
     }) => {
       await runSuggest({
         shell: opts.shell as ShellType | 'auto',
         historyFile: opts.historyFile,
         minFrequency: parseInt(opts.minFrequency, 10) || 5,
         output: opts.output,
+        interactive: opts.interactive ?? false,
       });
     },
   );

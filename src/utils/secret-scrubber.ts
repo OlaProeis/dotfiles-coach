@@ -89,7 +89,13 @@ const SECRET_PATTERNS: ReadonlyArray<{ name: string; regex: RegExp }> = [
   },
   {
     name: 'npm-token',
-    regex: /\bnpm_[A-Za-z0-9]{36,}\b/g,
+    regex: /\bnpm_[A-Za-z0-9]{8,}\b/g,
+  },
+
+  // ── npm config set auth tokens ──────────────────────────────────────────
+  {
+    name: 'npm-config-auth',
+    regex: /npm\s+config\s+set\b[^\n]*(?:_auth|_authToken|_password)\b[^\n]*/gi,
   },
 
   // ── Bearer / Authorization headers ─────────────────────────────────────

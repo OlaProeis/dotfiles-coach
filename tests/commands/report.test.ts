@@ -33,6 +33,22 @@ vi.mock('ora', () => ({
   },
 }));
 
+// ── Mock suggestions cache path to isolate from real filesystem ──────────────
+
+vi.mock('../../src/utils/file-operations.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../src/utils/file-operations.js')
+  >('../../src/utils/file-operations.js');
+  return {
+    ...actual,
+    getSuggestionsCachePath: () =>
+      path.join(
+        os.tmpdir(),
+        `dotfiles-coach-test-no-cache-${process.pid}.json`,
+      ),
+  };
+});
+
 // ── Import after mocks ──────────────────────────────────────────────────────
 
 import { runReport } from '../../src/commands/report.js';
