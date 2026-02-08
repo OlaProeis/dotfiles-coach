@@ -10,7 +10,7 @@
  * and tests. All response parsing flows through this module.
  */
 
-import type { Suggestion, SafetyAlert } from '../types/index.js';
+import type { Suggestion, SafetyAlert, CommandPattern } from '../types/index.js';
 
 // ── JSON extraction (3-tier) ────────────────────────────────────────────────
 
@@ -252,4 +252,114 @@ function validateSafetyAlerts(items: unknown[]): SafetyAlert[] {
   }
 
   return results;
+}
+
+// ── ANSI code stripping ──────────────────────────────────────────────────────
+
+/**
+ * Strip ANSI escape codes from terminal output.
+ *
+ * Needed when parsing raw output from `gh copilot suggest` which may
+ * contain color codes, cursor control sequences, and other non-printable
+ * characters.
+ */
+export function stripAnsiCodes(str: string): string {
+  return str
+    .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\x1B\].*?(?:\x07|\x1B\\)/g, '')
+    .replace(/\x1B[()][AB012]/g, '')
+    .replace(/\x1B[>=]/g, '')
+    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '');
+}
+
+// ── Copilot suggest output extraction ────────────────────────────────────────
+
+/**
+ * Extract the actual suggested command from the raw output of
+ * `gh copilot suggest -t shell`.
+ *
+ * The output may contain UI chrome like "Suggestion:", interactive menu
+ * options, etc. This function strips that away and returns just the
+ * command/code portion.
+ */
+export function extractCopilotSuggestion(raw: string): string {
+  const cleaned = stripAnsiCodes(raw).trim();
+  if (!cleaned) return '';
+
+  // Pattern 1: "Suggestion:\n  <code>\n? Select an option..."
+  const suggestionBlock = cleaned.match(
+    /Suggestion:\s*\n\s*([\s\S]*?)(?:\n\s*\?\s*Select|$)/i,
+  );
+  if (suggestionBlock?.[1]?.trim()) {
+    return suggestionBlock[1].trim();
+  }
+
+  // Pattern 2: strip known interactive menu elements
+  const withoutMenu = cleaned
+    .replace(/\?\s*Select an option[\s\S]*$/m, '')
+    .replace(/>\s*Copy command to clipboard[\s\S]*$/m, '')
+    .replace(/Suggestion:\s*/i, '')
+    .replace(/^\s*\n/gm, '')
+    .trim();
+
+  return withoutMenu || cleaned;
+}
+
+// ── Single Copilot response → Suggestion ─────────────────────────────────────
+
+/**
+ * Build a `Suggestion` from the raw output of a single
+ * `gh copilot suggest -t shell` invocation.
+ *
+ * Inspects the code to determine the type (alias / function / script)
+ * and extract the name.
+ */
+export function buildSuggestionFromRawCode(
+  raw: string,
+  pattern: CommandPattern,
+): Suggestion | null {
+  const code = extractCopilotSuggestion(raw);
+  if (!code) return null;
+
+  let type: 'alias' | 'function' | 'script' = 'function';
+  let name = '';
+
+  // ── Bash / Zsh patterns ──
+  // alias name='...'
+  const aliasMatch = code.match(/^alias\s+([\w-]+)\s*=/m);
+  // name() { ... } or function name() { ... }
+  const funcMatch = code.match(/^(?:function\s+)?([\w-]+)\s*\(\)/m);
+
+  // ── PowerShell patterns ──
+  // Set-Alias -Name X -Value Y
+  const psAliasMatch = code.match(/Set-Alias\s+-Name\s+([\w-]+)/i);
+  // function VerbNoun { ... }
+  const psFuncMatch = code.match(/^function\s+([\w-]+)/m);
+
+  // Shebang → script
+  const hasShebang = /^#!\//.test(code);
+
+  if (aliasMatch) {
+    type = 'alias';
+    name = aliasMatch[1];
+  } else if (psAliasMatch) {
+    type = 'alias';
+    name = psAliasMatch[1];
+  } else if (funcMatch) {
+    type = 'function';
+    name = funcMatch[1];
+  } else if (psFuncMatch) {
+    type = 'function';
+    name = psFuncMatch[1];
+  } else if (hasShebang) {
+    type = 'script';
+  }
+
+  return {
+    pattern: pattern.pattern,
+    type,
+    code,
+    name,
+    explanation: `Shortcut for "${pattern.pattern}" (used ${pattern.frequency} times)`,
+  };
 }

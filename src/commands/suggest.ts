@@ -107,7 +107,8 @@ export async function runSuggest(
     );
 
     // 8 ── Call Copilot ────────────────────────────────────────────────────
-    spinner.text = 'Generating suggestions via GitHub Copilot CLI...';
+    const patternCount = Math.min(scrubbedPatterns.length, 7);
+    spinner.text = `Generating suggestions for ${patternCount} patterns via GitHub Copilot CLI...`;
     const client = createCopilotClient();
 
     let suggestions: Suggestion[];
@@ -142,10 +143,11 @@ export async function runSuggest(
         console.error(chalk.red(`\n${error.message}`));
         console.error(
           chalk.yellow(
-            '\nTo use the suggest command, you need:\n' +
-              '  1. GitHub CLI: https://cli.github.com\n' +
-              '  2. Copilot extension: gh extension install github/gh-copilot\n' +
-              '  3. Authentication: gh auth login\n',
+            '\nTo use the suggest command, install the GitHub Copilot CLI:\n' +
+              '  Windows:  winget install GitHub.Copilot\n' +
+              '  macOS:    brew install copilot-cli\n' +
+              '  npm:      npm install -g @github/copilot (requires Node 22+)\n\n' +
+              'Then authenticate by running: copilot\n',
           ),
         );
         process.exit(1);

@@ -12,11 +12,25 @@
 
 import type { CommandPattern, ShellType } from '../types/index.js';
 
+/**
+ * Preamble added to all prompts sent to the new agentic Copilot CLI.
+ *
+ * Without this, the agent will try to actually create files and run
+ * commands instead of returning text output. This guard is critical
+ * for programmatic use via `copilot -p "..." -s`.
+ */
+const COPILOT_PREAMBLE =
+  'IMPORTANT: Do NOT create, modify, or read any files. Do NOT run any shell commands. ' +
+  'You are being used as a text-generation API. Respond ONLY with the requested JSON text output.';
+
 // ── Bash / Zsh Prompt ───────────────────────────────────────────────────────
 
 /**
  * Build a suggestion prompt for Bash/Zsh shells.
  * Follows the exact template from PRD Appendix A.
+ *
+ * Includes a "no file modification" preamble so the new agentic Copilot CLI
+ * returns JSON text instead of actually creating files.
  */
 export function buildBashZshPrompt(patterns: CommandPattern[]): string {
   const patternsBlock = patterns
@@ -26,7 +40,8 @@ export function buildBashZshPrompt(patterns: CommandPattern[]): string {
     )
     .join('\n');
 
-  return `You are a shell automation and ergonomics expert specializing in Bash and Zsh.
+  return `${COPILOT_PREAMBLE}
+You are a shell automation and ergonomics expert specializing in Bash and Zsh.
 
 Below are frequently repeated command patterns from a developer's shell history:
 
@@ -73,7 +88,8 @@ export function buildPowerShellPrompt(patterns: CommandPattern[]): string {
     )
     .join('\n');
 
-  return `You are a PowerShell scripting expert focused on automation and best practices.
+  return `${COPILOT_PREAMBLE}
+You are a PowerShell scripting expert focused on automation and best practices.
 
 Below are frequently repeated command patterns from a developer's PowerShell history:
 
@@ -118,7 +134,8 @@ export function buildSafetyPrompt(dangerousCommands: string[]): string {
     .map((c, i) => `${i + 1}. \`${c}\``)
     .join('\n');
 
-  return `You are a system security expert specializing in shell command safety.
+  return `${COPILOT_PREAMBLE}
+You are a system security expert specializing in shell command safety.
 
 The following commands appear in a user's shell history and may pose risks:
 
@@ -162,4 +179,40 @@ export function buildSuggestionPrompt(
   }
   // bash and zsh share the same template
   return buildBashZshPrompt(patterns);
+}
+
+// ── Individual pattern prompts (for real gh copilot suggest -t shell) ────────
+
+/**
+ * Build a short, focused prompt for a single pattern.
+ *
+ * `gh copilot suggest -t shell` expects a concise natural-language
+ * description of what you want, NOT a multi-page JSON-schema template.
+ * These prompts are designed to work naturally with the Copilot CLI.
+ */
+export function buildSinglePatternPrompt(
+  pattern: CommandPattern,
+  shell: ShellType,
+): string {
+  const shellLabel = shell === 'powershell' ? 'PowerShell' : 'bash';
+  // Truncate very long commands to avoid command-line length issues
+  const cmd =
+    pattern.pattern.length > 100
+      ? pattern.pattern.substring(0, 100)
+      : pattern.pattern;
+
+  // Multi-step commands → ask for a function
+  if (cmd.includes('&&') || cmd.includes('|') || cmd.includes(';')) {
+    return `Write a ${shellLabel} function to replace this multi-step command: ${cmd}`;
+  }
+  // Simple commands → alias or function
+  return `Create a ${shellLabel} alias or function for this command: ${cmd}`;
+}
+
+/**
+ * Build a prompt asking for a safer alternative to a dangerous command.
+ */
+export function buildSingleSafetyPrompt(command: string): string {
+  const cmd = command.length > 100 ? command.substring(0, 100) : command;
+  return `Suggest a safer shell command alternative for: ${cmd}`;
 }

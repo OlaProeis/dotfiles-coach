@@ -53,12 +53,13 @@ dotfiles-coach analyze --shell bash --history-file tests/fixtures/sample_bash_hi
 | Requirement | How to get it |
 |-------------|---------------|
 | **Node.js 18+** | [nodejs.org](https://nodejs.org) |
-| **GitHub CLI** (`gh`) | [cli.github.com](https://cli.github.com) |
-| **Copilot CLI extension** | `gh extension install github/gh-copilot` |
-| **GitHub auth** | `gh auth login` (one-time) |
+| **GitHub Copilot CLI** | Windows: `winget install GitHub.Copilot` / macOS: `brew install copilot-cli` / npm: `npm install -g @github/copilot` (Node 22+) |
+| **Copilot auth** | Run `copilot` and use `/login` (one-time) |
 | **Copilot subscription** | Free tier works |
 
-> **Note:** The `analyze` and `report` commands work 100% offline. Only `suggest` requires GitHub Copilot.
+> **Note:** The `analyze` and `report` commands work 100% offline. Only `suggest` requires GitHub Copilot CLI.
+>
+> **Migration note:** The old `gh copilot suggest/explain` extension was retired in October 2025. If you still have it, remove it with `gh extension remove gh-copilot` and install the new standalone Copilot CLI above.
 
 ---
 
@@ -136,11 +137,11 @@ dotfiles-coach report [OPTIONS]
 ![Dotfiles Coach Workflow](docs/images/workflow.png)
 
 1. **Analyze** reads your shell history file and identifies repeated command patterns
-2. **Suggest** scrubs all secrets, sends patterns to `gh copilot suggest` via a child process, and parses the structured response
+2. **Suggest** scrubs all secrets, sends patterns to the GitHub Copilot CLI in non-interactive mode (`copilot -p "..." -s`), and parses the structured JSON response
 3. **Apply** reads cached suggestions and writes them as valid shell code
 4. **Report** combines analysis + suggestions into a shareable document
 
-**No API tokens needed.** The tool piggybacks on your existing `gh` CLI authentication.
+**No API tokens needed.** The tool uses your existing Copilot CLI authentication.
 
 ### Internal Pipeline
 
@@ -155,7 +156,7 @@ dotfiles-coach report [OPTIONS]
 - All analysis happens **locally** on your machine
 - Secrets are **scrubbed** through 13 regex filters before any data leaves via Copilot (env vars, tokens, passwords, SSH keys, AWS keys, npm auth tokens, URLs with credentials, base64 blobs, and more)
 - Secret scrubbing is **mandatory** and cannot be disabled
-- The tool sends data **only** through `gh copilot` CLI commands -- no direct HTTP calls, no telemetry
+- The tool sends data **only** through the GitHub Copilot CLI binary -- no direct HTTP calls, no telemetry
 - The `apply` command **never** auto-modifies your shell config without explicit `--append-to`
 
 ---
@@ -220,7 +221,7 @@ src/
 | Language | TypeScript (strict mode) |
 | CLI framework | `commander` |
 | Terminal UI | `chalk`, `ora`, `boxen` |
-| Copilot integration | `execa` wrapping `gh copilot suggest` / `gh copilot explain` |
+| Copilot integration | `execa` wrapping `copilot -p -s` (new Copilot CLI) with legacy `gh copilot suggest` fallback |
 | String similarity | `fast-levenshtein` |
 | File I/O | `fs-extra` |
 | Tests | `vitest` |
