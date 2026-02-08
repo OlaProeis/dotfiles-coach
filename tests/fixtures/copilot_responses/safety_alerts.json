@@ -1,0 +1,20 @@
+[
+  {
+    "pattern": "rm -rf /",
+    "frequency": 1,
+    "risk": "Deletes the entire filesystem. Catastrophic data loss.",
+    "saferAlternative": "Use rm -rf with a specific, verified path. Consider using trash-cli instead."
+  },
+  {
+    "pattern": "chmod 777",
+    "frequency": 3,
+    "risk": "Sets world-readable/writable/executable permissions. Security vulnerability.",
+    "saferAlternative": "Use the minimum permissions needed, e.g. chmod 755 for directories, chmod 644 for files."
+  },
+  {
+    "pattern": "curl | bash",
+    "frequency": 2,
+    "risk": "Executes arbitrary remote code without inspection. Supply-chain attack vector.",
+    "saferAlternative": "Download the script first, review it, then execute: curl -o script.sh URL && less script.sh && bash script.sh"
+  }
+]

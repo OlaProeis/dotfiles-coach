@@ -1,0 +1,26 @@
+[
+  {
+    "pattern": "git add . && git commit -m",
+    "type": "function",
+    "code": "function gac() {\n  git add . && git commit -m \"$1\"\n}",
+    "name": "gac",
+    "explanation": "Quick git add-all and commit with a message argument. Usage: gac \"feat: add login\"",
+    "safety": "safe"
+  },
+  {
+    "pattern": "docker compose up -d",
+    "type": "alias",
+    "code": "alias dcu='docker compose up -d'",
+    "name": "dcu",
+    "explanation": "Short alias for starting Docker Compose services in detached mode.",
+    "safety": "safe"
+  },
+  {
+    "pattern": "find . -name '*.log' -delete",
+    "type": "function",
+    "code": "function clean-logs() {\n  find \"${1:-.}\" -name '*.log' -print -delete\n}",
+    "name": "clean-logs",
+    "explanation": "Removes all .log files under the given directory (defaults to current). Prints each deleted file.",
+    "safety": "warning"
+  }
+]

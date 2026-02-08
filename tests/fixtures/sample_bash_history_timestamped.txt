@@ -1,0 +1,16 @@
+#1700000000
+git status
+#1700000060
+npm install
+#1700000120
+git add .
+#1700000180
+git commit -m "feat: add parser"
+#1700000240
+ls
+#1700000300
+npm test
+#1700000360
+clear
+#1700000420
+docker compose up -d

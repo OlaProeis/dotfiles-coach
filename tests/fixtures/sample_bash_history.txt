@@ -1,0 +1,26 @@
+ls
+cd
+git status
+git add .
+git commit -m "initial commit"
+npm install
+npm test
+git status
+git status
+git status
+clear
+exit
+q
+npm run build
+docker compose up -d
+docker compose logs -f
+kubectl get pods
+kubectl get pods
+npm test
+git push origin main
+echo "hello world"
+curl https://api.example.com/data
+ssh user@server.example.com
+git log --oneline
+git diff
+npm run lint

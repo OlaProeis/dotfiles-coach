@@ -1,0 +1,18 @@
+[
+  {
+    "pattern": "Get-ChildItem -Recurse | Where-Object",
+    "type": "function",
+    "code": "function Find-Files {\n  param([string]$Pattern)\n  Get-ChildItem -Recurse | Where-Object { $_.Name -like $Pattern }\n}",
+    "name": "Find-Files",
+    "explanation": "Recursively search for files matching a name pattern. Usage: Find-Files '*.log'",
+    "safety": "safe"
+  },
+  {
+    "pattern": "Remove-Item -Recurse -Force",
+    "type": "alias",
+    "code": "Set-Alias -Name rmrf -Value 'Remove-Item -Recurse -Force'",
+    "name": "rmrf",
+    "explanation": "Short alias for recursive force-delete. Use with caution.",
+    "safety": "danger"
+  }
+]

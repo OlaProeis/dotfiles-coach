@@ -1,0 +1,11 @@
+docker run \
+  --name mycontainer \
+  -p 8080:80 \
+  nginx:latest
+git status
+echo "single line"
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"key": "value"}' \
+  https://api.example.com/data
+npm test
