@@ -1,3 +1,5 @@
+![Dotfiles Coach](docs/images/cover-image.png)
+
 # Dotfiles Coach
 
 > AI-powered shell automation from your command history, built for the [GitHub Copilot CLI Challenge](https://dev.to/challenges/github).
