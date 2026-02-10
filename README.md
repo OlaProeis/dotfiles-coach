@@ -159,6 +159,8 @@ dotfiles-coach report [OPTIONS]
 - The tool sends data **only** through the GitHub Copilot CLI binary -- no direct HTTP calls, no telemetry
 - The `apply` command **never** auto-modifies your shell config without explicit `--append-to`
 
+> For full details on the privacy model, secret scrubbing patterns, and data flow, see [docs/PRIVACY.md](docs/PRIVACY.md).
+
 ---
 
 ## Development
@@ -209,7 +211,32 @@ src/
 ├── copilot/                  # client.ts, prompts.ts, response-parser.ts
 ├── formatters/               # table.ts, markdown.ts, json.ts
 └── utils/                    # shell-detect.ts, history-paths.ts, file-operations.ts, secret-scrubber.ts
+
+docs/
+├── ARCHITECTURE.md           # Internal architecture & module reference
+├── CONTRIBUTING.md           # Development setup, conventions, testing
+├── PRIVACY.md                # Privacy model & secret scrubbing details
+├── prd.md                    # Product Requirements Document
+├── prd-features-rag-team-tui.md  # Future features PRD (RAG, Team, TUI)
+├── manual-test-plan.md       # Manual testing checklist
+├── TESTING-WITHOUT-COPILOT.md    # Mock client testing guide
+├── devto-submission.md       # DEV.to article content
+└── images/                   # Architecture & workflow diagrams
 ```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | Internal architecture, module reference, data flow, and type system |
+| [Contributing](docs/CONTRIBUTING.md) | Development setup, code conventions, testing, and adding features |
+| [Privacy & Security](docs/PRIVACY.md) | Privacy model, secret scrubbing details, and data flow |
+| [PRD](docs/prd.md) | Product Requirements Document (v3.0) |
+| [Future Features PRD](docs/prd-features-rag-team-tui.md) | RAG search, Team Dotfiles, Interactive TUI |
+| [Manual Test Plan](docs/manual-test-plan.md) | Pre-release manual testing checklist |
+| [Testing Without Copilot](docs/TESTING-WITHOUT-COPILOT.md) | Mock client setup and testing guide |
 
 ---
 

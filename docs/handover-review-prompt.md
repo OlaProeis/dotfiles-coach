@@ -87,7 +87,7 @@ src/
 └── utils/secret-scrubber.ts
 ```
 
-Also review: `package.json`, `tsconfig.json`, `README.md`, `prd.md`
+Also review: `package.json`, `tsconfig.json`, `README.md`, `docs/prd.md`
 
 ## Deliverables
 
