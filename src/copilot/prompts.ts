@@ -216,3 +216,21 @@ export function buildSingleSafetyPrompt(command: string): string {
   const cmd = command.length > 100 ? command.substring(0, 100) : command;
   return `Suggest a safer shell command alternative for: ${cmd}`;
 }
+
+// ── Explain prompt (for search --explain) ───────────────────────────────────
+
+/**
+ * Build a prompt asking Copilot to explain a single command in plain English.
+ *
+ * Used by the `search --explain` flag. The command should already be scrubbed
+ * by `scrubSecrets()` before being passed here.
+ */
+export function buildExplainPrompt(command: string): string {
+  const cmd = command.length > 200 ? command.substring(0, 200) : command;
+  return (
+    `${COPILOT_PREAMBLE}\n` +
+    `Explain the following shell command in one or two concise sentences. ` +
+    `Focus on what it does, what each flag means, and when you would use it.\n\n` +
+    `Command: ${cmd}`
+  );
+}

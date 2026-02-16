@@ -13,37 +13,69 @@ Dotfiles Coach analyses your shell history (Bash, Zsh, PowerShell), finds repeat
 ## Quick Start
 
 ```bash
-# Clone and install
 git clone https://github.com/OlaProeis/dotfiles-coach.git
 cd dotfiles-coach
 npm install
 npm run build
-
-# (Optional) Link for global "dotfiles-coach" command
-npm link
+npm link          # optional -- gives you the global "dotfiles-coach" command
 ```
 
-Once built, run commands with `dotfiles-coach` (if linked) or `node dist/cli.js`:
+> If you skip `npm link`, replace `dotfiles-coach` with `node dist/cli.js` in the examples below.
+
+---
+
+## Try It Out
+
+Every command below uses bundled sample data -- **no real history or Copilot subscription needed**.
+
+> **PowerShell users:** swap double quotes for single quotes if you get parsing errors.
 
 ```bash
-# 1. Analyse your shell history (100% local, no network)
-dotfiles-coach analyze
-
-# 2. Generate Copilot-powered suggestions
-dotfiles-coach suggest
-
-# 3. Apply suggestions to a file
-dotfiles-coach apply
-
-# 4. Generate a summary report
-dotfiles-coach report --output report.md
-```
-
-### Try it instantly with sample data
-
-```bash
-# No real history needed -- use bundled fixtures
+# 1. Analyze -- find patterns & safety issues (100% local)
 dotfiles-coach analyze --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1
+
+# 2. Search -- find a command by intent (100% local, fuzzy matching)
+dotfiles-coach search "docker" --shell bash --history-file tests/fixtures/sample_bash_history.txt
+
+# 3. Suggest -- generate Copilot-powered aliases & functions
+dotfiles-coach suggest --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1
+
+# 4. Suggest with Interactive TUI -- review, edit & approve each suggestion
+dotfiles-coach suggest --interactive --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1
+
+# 5. Apply -- preview generated shell code (dry run, no files touched)
+dotfiles-coach apply --dry-run
+
+# 6. Apply with Interactive TUI -- pick which suggestions to write
+dotfiles-coach apply --interactive --dry-run
+
+# 7. Report -- export a markdown summary
+dotfiles-coach report --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1 --output report.md
+
+# 8. Help & version
+dotfiles-coach --help
+dotfiles-coach --version
+```
+
+**Without Copilot installed?** Set the mock-client flag first:
+
+```bash
+# PowerShell
+$env:DOTFILES_COACH_USE_MOCK_COPILOT = "1"
+
+# Bash / Zsh
+export DOTFILES_COACH_USE_MOCK_COPILOT=1
+```
+
+Then run any `suggest` or `report` command above -- the mock returns realistic sample suggestions.
+
+**Using your real history** -- just drop the `--shell` and `--history-file` flags:
+
+```bash
+dotfiles-coach analyze
+dotfiles-coach search "that docker command from last week"
+dotfiles-coach suggest --interactive
+dotfiles-coach report --output report.md
 ```
 
 ---
@@ -57,9 +89,7 @@ dotfiles-coach analyze --shell bash --history-file tests/fixtures/sample_bash_hi
 | **Copilot auth** | Run `copilot` and use `/login` (one-time) |
 | **Copilot subscription** | Free tier works |
 
-> **Note:** The `analyze` and `report` commands work 100% offline. Only `suggest` requires GitHub Copilot CLI.
->
-> **Migration note:** The old `gh copilot suggest/explain` extension was retired in October 2025. If you still have it, remove it with `gh extension remove gh-copilot` and install the new standalone Copilot CLI above.
+> `analyze`, `report`, and `search` work **100% offline**. Only `suggest` (and `search --explain`) talks to Copilot.
 
 ---
 
@@ -69,40 +99,43 @@ dotfiles-coach analyze --shell bash --history-file tests/fixtures/sample_bash_hi
 
 Parse shell history and display frequency stats + safety alerts.
 
-```bash
-dotfiles-coach analyze [OPTIONS]
-```
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--shell <type>` | `auto` | `bash`, `zsh`, `powershell`, `auto` |
+| `--history-file <path>` | auto-detected | Path to history file |
+| `--min-frequency <n>` | `5` | Minimum repeat count |
+| `--top <n>` | `20` | Show top N patterns |
+| `--format <format>` | `table` | `table`, `json`, `markdown` |
+
+### `dotfiles-coach search <query>`
+
+Search your shell history by natural-language query -- 100% local fuzzy + keyword matching.
+
+![Search Pipeline](docs/images/search-flow.png)
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--shell <type>` | `auto` | Shell type: `bash`, `zsh`, `powershell`, `auto` |
+| `--shell <type>` | `auto` | `bash`, `zsh`, `powershell`, `auto` |
 | `--history-file <path>` | auto-detected | Path to history file |
-| `--min-frequency <n>` | `5` | Minimum frequency threshold |
-| `--top <n>` | `20` | Show top N patterns |
-| `--format <format>` | `table` | Output format: `table`, `json`, `markdown` |
+| `--max-results <n>` | `10` | Maximum results |
+| `--format <format>` | `table` | `table`, `json`, `markdown` |
+| `--explain` | `false` | Ask Copilot to explain the top result |
 
 ### `dotfiles-coach suggest`
 
 Send top patterns to GitHub Copilot CLI and display automation suggestions.
 
-```bash
-dotfiles-coach suggest [OPTIONS]
-```
-
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--shell <type>` | `auto` | Shell type |
+| `--shell <type>` | `auto` | `bash`, `zsh`, `powershell`, `auto` |
 | `--history-file <path>` | auto-detected | Path to history file |
-| `--min-frequency <n>` | `5` | Minimum frequency threshold |
+| `--min-frequency <n>` | `5` | Minimum repeat count |
 | `--output <file>` | stdout | Save suggestions to file |
+| **`--interactive`** | `false` | **Launch TUI to review, edit & approve each suggestion** |
 
 ### `dotfiles-coach apply`
 
 Write approved suggestions to a shell configuration file.
-
-```bash
-dotfiles-coach apply [OPTIONS]
-```
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -110,25 +143,37 @@ dotfiles-coach apply [OPTIONS]
 | `--append-to <file>` | - | Append to existing profile (e.g. `~/.zshrc`) |
 | `--dry-run` | `false` | Preview without writing |
 | `--no-backup` | `false` | Skip backup creation |
+| **`--interactive`** | `false` | **Launch TUI to pick which suggestions to apply** |
 
-> **Safety:** The `apply` command **never** auto-sources files. It prints `source` instructions for you to run manually.
+> **Safety:** `apply` **never** auto-sources files. It prints `source` instructions for you to run manually.
 
 ### `dotfiles-coach report`
 
-Generate a comprehensive markdown or JSON report of analysis and suggestions.
-
-```bash
-dotfiles-coach report [OPTIONS]
-```
+Generate a comprehensive markdown or JSON report.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--shell <type>` | `auto` | Shell type |
+| `--shell <type>` | `auto` | `bash`, `zsh`, `powershell`, `auto` |
 | `--history-file <path>` | auto-detected | Path to history file |
-| `--min-frequency <n>` | `5` | Minimum frequency threshold |
+| `--min-frequency <n>` | `5` | Minimum repeat count |
 | `--top <n>` | `20` | Show top N patterns |
 | `--output <file>` | stdout | Write report to file |
-| `--format <format>` | `markdown` | Report format: `markdown`, `json` |
+| `--format <format>` | `markdown` | `markdown`, `json` |
+
+---
+
+## Interactive TUI
+
+The `--interactive` flag (on `suggest` and `apply`) launches a full terminal UI built with [ink](https://github.com/vadimdemedes/ink):
+
+- **Up / Down** -- navigate the suggestion list
+- **Enter** -- toggle a suggestion for apply
+- **Space** -- toggle as ignored
+- **e** -- open the suggestion code in your `$EDITOR` for live editing
+- **a** -- apply all pending
+- **q** -- finish and continue
+
+The TUI re-renders after each editor session so you can tweak code and keep reviewing. Falls back to non-interactive output when not running in a TTY (e.g. CI pipelines).
 
 ---
 
@@ -136,10 +181,11 @@ dotfiles-coach report [OPTIONS]
 
 ![Dotfiles Coach Workflow](docs/images/workflow.png)
 
-1. **Analyze** reads your shell history file and identifies repeated command patterns
-2. **Suggest** scrubs all secrets, sends patterns to the GitHub Copilot CLI in non-interactive mode (`copilot -p "..." -s`), and parses the structured JSON response
-3. **Apply** reads cached suggestions and writes them as valid shell code
-4. **Report** combines analysis + suggestions into a shareable document
+1. **Analyze** reads your shell history and identifies repeated command patterns
+2. **Search** tokenizes your query and every history command, scores by keyword overlap + fuzzy (Levenshtein) matching, and ranks by relevance
+3. **Suggest** scrubs all secrets, sends patterns to the Copilot CLI (`copilot -p "..." -s`), and parses the structured JSON response
+4. **Apply** reads cached suggestions and writes them as valid shell code
+5. **Report** combines analysis + suggestions into a shareable document
 
 **No API tokens needed.** The tool uses your existing Copilot CLI authentication.
 
@@ -154,48 +200,37 @@ dotfiles-coach report [OPTIONS]
 ![Privacy Flow](docs/images/privacy-flow.png)
 
 - All analysis happens **locally** on your machine
-- Secrets are **scrubbed** through 13 regex filters before any data leaves via Copilot (env vars, tokens, passwords, SSH keys, AWS keys, npm auth tokens, URLs with credentials, base64 blobs, and more)
+- Secrets are **scrubbed** through 13 regex filters before any data leaves via Copilot
 - Secret scrubbing is **mandatory** and cannot be disabled
 - The tool sends data **only** through the GitHub Copilot CLI binary -- no direct HTTP calls, no telemetry
-- The `apply` command **never** auto-modifies your shell config without explicit `--append-to`
+- `apply` **never** auto-modifies your shell config without explicit `--append-to`
 
-> For full details on the privacy model, secret scrubbing patterns, and data flow, see [docs/PRIVACY.md](docs/PRIVACY.md).
+> Full details: [docs/PRIVACY.md](docs/PRIVACY.md)
 
 ---
 
-## Development
+## Testing
+
+425 automated tests across 22 test files:
 
 ```bash
-# Clone and install
-git clone https://github.com/OlaProeis/dotfiles-coach.git
-cd dotfiles-coach
-npm install
-
-# Build (required for manual testing)
-npm run build
-
-# Type-check
-npm run typecheck
-
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
+npm test              # run all 425 tests
+npm run test:watch    # watch mode
+npm run typecheck     # type-check without emitting
 ```
 
-### Testing with mock Copilot
+| Module | Tests |
+|--------|-------|
+| Parsers (Bash, Zsh, common) | 37 |
+| Utilities (shell-detect, history-paths, secret-scrubber, file-ops) | 70 |
+| Copilot (client, prompts, response-parser) | 53 |
+| Analyzers (frequency, safety) | 33 |
+| Formatters (table, json, markdown) | 51 |
+| Search (scorer) | 102 |
+| Commands (analyze, suggest, apply, report, search) | 53 |
+| Types + E2E | 26 |
 
-Set the environment variable to use the mock client (no real Copilot subscription needed):
-
-```bash
-# PowerShell
-$env:DOTFILES_COACH_USE_MOCK_COPILOT = "1"
-node dist/cli.js suggest --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1
-
-# Bash/Zsh
-DOTFILES_COACH_USE_MOCK_COPILOT=1 node dist/cli.js suggest --shell bash --history-file tests/fixtures/sample_bash_history.txt --min-frequency 1
-```
+> Full manual test checklist: [docs/manual-test-plan.md](docs/manual-test-plan.md)
 
 ---
 
@@ -205,38 +240,15 @@ DOTFILES_COACH_USE_MOCK_COPILOT=1 node dist/cli.js suggest --shell bash --histor
 src/
 ├── cli.ts                    # Commander entry point
 ├── types/index.ts            # All shared interfaces
-├── commands/                 # analyze, suggest, apply, report
+├── commands/                 # analyze, suggest, apply, report, search
+├── search/                   # scorer.ts (tokenize + keyword/fuzzy ranking)
+├── tui/                      # Interactive TUI (ink + React)
 ├── parsers/                  # bash.ts (Bash+Zsh), powershell.ts, common.ts
 ├── analyzers/                # frequency.ts, patterns.ts, safety.ts
 ├── copilot/                  # client.ts, prompts.ts, response-parser.ts
 ├── formatters/               # table.ts, markdown.ts, json.ts
 └── utils/                    # shell-detect.ts, history-paths.ts, file-operations.ts, secret-scrubber.ts
-
-docs/
-├── ARCHITECTURE.md           # Internal architecture & module reference
-├── CONTRIBUTING.md           # Development setup, conventions, testing
-├── PRIVACY.md                # Privacy model & secret scrubbing details
-├── prd.md                    # Product Requirements Document
-├── prd-features-rag-team-tui.md  # Future features PRD (RAG, Team, TUI)
-├── manual-test-plan.md       # Manual testing checklist
-├── TESTING-WITHOUT-COPILOT.md    # Mock client testing guide
-├── devto-submission.md       # DEV.to article content
-└── images/                   # Architecture & workflow diagrams
 ```
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [Architecture](docs/ARCHITECTURE.md) | Internal architecture, module reference, data flow, and type system |
-| [Contributing](docs/CONTRIBUTING.md) | Development setup, code conventions, testing, and adding features |
-| [Privacy & Security](docs/PRIVACY.md) | Privacy model, secret scrubbing details, and data flow |
-| [PRD](docs/prd.md) | Product Requirements Document (v3.0) |
-| [Future Features PRD](docs/prd-features-rag-team-tui.md) | RAG search, Team Dotfiles, Interactive TUI |
-| [Manual Test Plan](docs/manual-test-plan.md) | Pre-release manual testing checklist |
-| [Testing Without Copilot](docs/TESTING-WITHOUT-COPILOT.md) | Mock client setup and testing guide |
 
 ---
 
@@ -244,36 +256,26 @@ docs/
 
 | Area | Choice |
 |------|--------|
-| Runtime | Node.js 18+ (ESM via `"module": "NodeNext"`) |
+| Runtime | Node.js 18+ (ESM) |
 | Language | TypeScript (strict mode) |
 | CLI framework | `commander` |
-| Terminal UI | `chalk`, `ora`, `boxen` |
-| Copilot integration | `execa` wrapping `copilot -p -s` (new Copilot CLI) with legacy `gh copilot suggest` fallback |
+| Terminal UI | `chalk`, `ora`, `boxen`, `ink` (React for CLIs) |
+| Copilot integration | `execa` wrapping `copilot -p -s` with legacy `gh copilot suggest` fallback |
 | String similarity | `fast-levenshtein` |
 | File I/O | `fs-extra` |
 | Tests | `vitest` |
 
 ---
 
-## Testing
+## Documentation
 
-291 automated tests across 20 test files covering parsers, analyzers, formatters, commands, utilities, and end-to-end workflows.
-
-```bash
-npm test              # Run all 291 tests
-npm run test:watch    # Watch mode
-npm run typecheck     # Type-check without emitting
-```
-
-| Module | Tests |
-|--------|-------|
-| Parsers (Bash, Zsh, common) | 37 |
-| Utilities (shell-detect, history-paths, secret-scrubber, file-ops) | 70 |
-| Copilot (client, prompts, response-parser) | 49 |
-| Analyzers (frequency, safety) | 33 |
-| Formatters (table, json, markdown) | 51 |
-| Commands (analyze, suggest, apply, report) | 40 |
-| Types + E2E | 10 |
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | Internal architecture, module reference, data flow |
+| [Contributing](docs/CONTRIBUTING.md) | Development setup, conventions, testing |
+| [Privacy & Security](docs/PRIVACY.md) | Privacy model, secret scrubbing details |
+| [Manual Test Plan](docs/manual-test-plan.md) | Pre-release manual testing checklist |
+| [Testing Without Copilot](docs/TESTING-WITHOUT-COPILOT.md) | Mock client setup and testing guide |
 
 ---
 

@@ -97,3 +97,27 @@ export interface SuggestionsCache {
   generatedAt: string;
   suggestions: Suggestion[];
 }
+
+/** A single search result from the RAG search feature. */
+export interface SearchResult {
+  /** The original command string from history. */
+  command: string;
+  /** Relevance score (0–1, higher is better). */
+  score: number;
+  /** Timestamp of last usage, if available. */
+  lastUsed?: Date;
+  /** How many times this command appeared in history. */
+  frequency: number;
+  /** Line number in history file where the command last appeared. */
+  lineNumber: number;
+}
+
+/** Options for the search command. */
+export interface SearchOptions {
+  shell?: ShellType | 'auto';
+  historyFile?: string;
+  query: string;
+  maxResults?: number;
+  format?: OutputFormat;
+  explain?: boolean;
+}

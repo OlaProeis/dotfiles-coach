@@ -4,6 +4,7 @@ import {
   buildPowerShellPrompt,
   buildSafetyPrompt,
   buildSuggestionPrompt,
+  buildExplainPrompt,
 } from '../../src/copilot/prompts.js';
 import type { CommandPattern } from '../../src/types/index.js';
 
@@ -133,5 +134,33 @@ describe('buildSuggestionPrompt', () => {
   it('dispatches to PowerShell template for powershell', () => {
     const prompt = buildSuggestionPrompt(samplePatterns, 'powershell');
     expect(prompt).toContain('PowerShell scripting expert');
+  });
+});
+
+// ── buildExplainPrompt ──────────────────────────────────────────────────────
+
+describe('buildExplainPrompt', () => {
+  it('includes the no-file-modification preamble', () => {
+    const prompt = buildExplainPrompt('ls -la');
+    expect(prompt).toContain('Do NOT create, modify, or read any files');
+  });
+
+  it('includes the command', () => {
+    const prompt = buildExplainPrompt('ffmpeg -i input.mp4 -vcodec libx264 output.mp4');
+    expect(prompt).toContain('ffmpeg -i input.mp4');
+  });
+
+  it('asks for a concise explanation', () => {
+    const prompt = buildExplainPrompt('git rebase -i HEAD~3');
+    expect(prompt).toContain('Explain');
+    expect(prompt).toContain('concise');
+  });
+
+  it('truncates very long commands', () => {
+    const longCmd = 'a'.repeat(300);
+    const prompt = buildExplainPrompt(longCmd);
+    // Should be truncated to 200 chars
+    expect(prompt).not.toContain('a'.repeat(300));
+    expect(prompt).toContain('a'.repeat(200));
   });
 });

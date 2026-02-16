@@ -41,6 +41,7 @@ vi.mock('ora', () => ({
 
 import { runAnalyze } from '../src/commands/analyze.js';
 import { runReport } from '../src/commands/report.js';
+import { runSearch } from '../src/commands/search.js';
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -283,9 +284,109 @@ describe('E2E: Full workflow', () => {
     );
   });
 
+  // ── analyze → search workflow ─────────────────────────────────────────
+
+  it('search finds commands that analyze also detected', async () => {
+    const historyFile = path.join(FIXTURES_DIR, 'sample_bash_history.txt');
+
+    // Step 1: Analyze to see what patterns exist
+    const analysisResult = await runAnalyze({
+      shell: 'bash',
+      historyFile,
+      minFrequency: 1,
+      top: 10,
+      format: 'json',
+    });
+
+    // Step 2: Search for a known pattern from analysis
+    const topPattern = analysisResult.patterns[0]?.pattern;
+    expect(topPattern).toBeDefined();
+
+    logSpy.mockClear();
+
+    const searchResults = await runSearch({
+      shell: 'bash',
+      historyFile,
+      query: topPattern,
+      maxResults: 5,
+      format: 'json',
+    });
+
+    // The search should find the same command
+    expect(searchResults.length).toBeGreaterThan(0);
+    expect(searchResults[0].command).toContain(topPattern.split(' ')[0]);
+  });
+
+  // ── search across formats produces consistent results ─────────────────
+
+  it('search returns same results regardless of output format', async () => {
+    const historyFile = path.join(FIXTURES_DIR, 'sample_bash_history.txt');
+    const query = 'git';
+
+    const tableResults = await runSearch({
+      shell: 'bash',
+      historyFile,
+      query,
+      maxResults: 5,
+      format: 'table',
+    });
+
+    const jsonResults = await runSearch({
+      shell: 'bash',
+      historyFile,
+      query,
+      maxResults: 5,
+      format: 'json',
+    });
+
+    const mdResults = await runSearch({
+      shell: 'bash',
+      historyFile,
+      query,
+      maxResults: 5,
+      format: 'markdown',
+    });
+
+    // All formats should return the same results array
+    expect(tableResults.length).toBe(jsonResults.length);
+    expect(jsonResults.length).toBe(mdResults.length);
+
+    for (let i = 0; i < tableResults.length; i++) {
+      expect(tableResults[i].command).toBe(jsonResults[i].command);
+      expect(jsonResults[i].command).toBe(mdResults[i].command);
+      expect(tableResults[i].score).toBe(jsonResults[i].score);
+    }
+  });
+
+  // ── search works with both bash and zsh fixtures ──────────────────────
+
+  it('search works across bash and zsh fixtures', async () => {
+    const bashResults = await runSearch({
+      shell: 'bash',
+      historyFile: path.join(FIXTURES_DIR, 'sample_bash_history.txt'),
+      query: 'git',
+      maxResults: 5,
+      format: 'json',
+    });
+
+    const zshResults = await runSearch({
+      shell: 'zsh',
+      historyFile: path.join(FIXTURES_DIR, 'sample_zsh_history.txt'),
+      query: 'git',
+      maxResults: 5,
+      format: 'json',
+    });
+
+    // Both should find git commands
+    expect(bashResults.length).toBeGreaterThan(0);
+    expect(zshResults.length).toBeGreaterThan(0);
+    expect(bashResults[0].command.toLowerCase()).toContain('git');
+    expect(zshResults[0].command.toLowerCase()).toContain('git');
+  });
+
   // ── Error handling ────────────────────────────────────────────────────
 
-  it('analyze and report both exit cleanly for missing files', async () => {
+  it('analyze, report, and search all exit cleanly for missing files', async () => {
     const badPath = path.join(FIXTURES_DIR, 'nonexistent_history.txt');
 
     await expect(
@@ -303,6 +404,17 @@ describe('E2E: Full workflow', () => {
         shell: 'bash',
         historyFile: badPath,
         format: 'markdown',
+      }),
+    ).rejects.toThrow(/process\.exit/);
+
+    exitSpy.mockClear();
+
+    await expect(
+      runSearch({
+        shell: 'bash',
+        historyFile: badPath,
+        query: 'git',
+        format: 'table',
       }),
     ).rejects.toThrow(/process\.exit/);
   });

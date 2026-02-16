@@ -10,6 +10,7 @@ import { runAnalyze } from './commands/analyze.js';
 import { runSuggest } from './commands/suggest.js';
 import { runApply } from './commands/apply.js';
 import { runReport } from './commands/report.js';
+import { runSearch } from './commands/search.js';
 import type { ShellType, OutputFormat } from './types/index.js';
 
 const program = new Command();
@@ -170,6 +171,50 @@ program
         top: parseInt(opts.top, 10) || 20,
         output: opts.output,
         format: opts.format as 'markdown' | 'json',
+      });
+    },
+  );
+
+// ── search ──────────────────────────────────────────────────────────────────
+
+program
+  .command('search')
+  .description('Search shell history by natural-language query')
+  .argument('<query>', 'Search query (e.g. "that ffmpeg command")')
+  .addOption(
+    new Option('--shell <type>', 'Shell type')
+      .choices(['bash', 'zsh', 'powershell', 'auto'])
+      .default('auto'),
+  )
+  .option(
+    '--history-file <path>',
+    'Path to history file (overrides auto-detection)',
+  )
+  .option('--max-results <n>', 'Maximum number of results', '10')
+  .addOption(
+    new Option('--format <format>', 'Output format')
+      .choices(['table', 'json', 'markdown'])
+      .default('table'),
+  )
+  .option('--explain', 'Use Copilot to explain the top result')
+  .action(
+    async (
+      query: string,
+      opts: {
+        shell: string;
+        historyFile?: string;
+        maxResults: string;
+        format: string;
+        explain?: boolean;
+      },
+    ) => {
+      await runSearch({
+        shell: opts.shell as ShellType | 'auto',
+        historyFile: opts.historyFile,
+        query,
+        maxResults: parseInt(opts.maxResults, 10) || 10,
+        format: opts.format as OutputFormat,
+        explain: opts.explain ?? false,
       });
     },
   );
